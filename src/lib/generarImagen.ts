@@ -575,7 +575,7 @@ export async function compartirODescargar(boletas: Boleta[]): Promise<void> {
     navigator.canShare?.({ files: [file] })
   ) {
     try {
-      await navigator.share({ files: [file], title: RIFA.titulo, text: RIFA.causa })
+      await navigator.share({ files: [file], title: RIFA.titulo, text: RIFA.mensajeCompartir })
       return
     } catch {
       // usuario canceló el share — caemos al download normal

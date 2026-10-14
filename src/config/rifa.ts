@@ -1,6 +1,6 @@
 export const RIFA = {
   titulo: 'RIFA POR ZEUS',
-  causa: 'Ayúdanos a pagar su operación',
+  mensajeCompartir: 'Zeus es el perro de la Familia, tu aporte ayudará a que sea operado, muchas gracias a quien se una',
   nombrePerro: 'Zeus',
   valorBoleta: 20_000,
   premio: 800_000,
