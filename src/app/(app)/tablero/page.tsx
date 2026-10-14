@@ -112,11 +112,11 @@ export default function TableroPage() {
       {/* ── Modal comprometer boleta libre ──────────────────────── */}
       {libreSeleccionada !== null && (
         <ComprometerModal
-          numero={libreSeleccionada}
+          numeros={[libreSeleccionada]}
           onClose={() => setLibreSeleccionada(null)}
-          onSuccess={(num) => {
+          onSuccess={() => {
             setLibreSeleccionada(null)
-            mostrarToast(`Boleta ${formatNumero(num)} comprometida ✓`)
+            mostrarToast(`Boleta ${formatNumero(libreSeleccionada)} comprometida`)
           }}
         />
       )}

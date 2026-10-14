@@ -70,11 +70,11 @@ export default function AccionesBoleta({ boleta, onMensaje }: Props) {
         </button>
         {modalComprometer && (
           <ComprometerModal
-            numero={boleta.numero}
+            numeros={[boleta.numero]}
             onClose={() => setModalComprometer(false)}
-            onSuccess={(num) => {
+            onSuccess={() => {
               setModalComprometer(false)
-              onMensaje?.(`Boleta ${formatNumero(num)} comprometida ✓`)
+              onMensaje?.(`Boleta ${formatNumero(boleta.numero)} comprometida`)
             }}
           />
         )}

@@ -17,3 +17,14 @@ export function formatCelular(celular: string): string {
   }
   return celular
 }
+
+// Formato mientras se escribe: "317", "317 378", "317 378 0801"
+export function formatCelularParcial(digits: string): string {
+  return [digits.slice(0, 3), digits.slice(3, 6), digits.slice(6, 10)].filter(Boolean).join(' ')
+}
+
+// "07", "07 y 23", "07, 23 y 45"
+export function listaNumeros(numeros: number[]): string {
+  const f = numeros.map(formatNumero)
+  return f.length <= 1 ? f.join('') : `${f.slice(0, -1).join(', ')} y ${f[f.length - 1]}`
+}
