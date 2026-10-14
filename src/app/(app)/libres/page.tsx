@@ -4,14 +4,15 @@ import { useState } from 'react'
 import { useBoletas } from '@/hooks/useBoletas'
 import { formatNumero } from '@/lib/formato'
 import ComprometerModal from '@/components/ComprometerModal'
+import Toast from '@/components/Toast'
 
 export default function LibresPage() {
   const { boletas, loading, error } = useBoletas()
-  const [busqueda, setBusqueda] = useState('')
+  const [busqueda, setBusqueda]     = useState('')
   const [seleccionada, setSeleccionada] = useState<number | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const [toast, setToast]           = useState<string | null>(null)
 
-  const libres = boletas.filter((b) => b.estado === 'libre')
+  const libres    = boletas.filter((b) => b.estado === 'libre')
   const filtradas = busqueda
     ? libres.filter((b) => formatNumero(b.numero).includes(busqueda))
     : libres
@@ -24,7 +25,8 @@ export default function LibresPage() {
   if (loading) {
     return (
       <div className="p-4">
-        <div className="h-8 bg-libre rounded-xl w-48 mb-4 animate-pulse" />
+        <div className="h-12 bg-libre rounded-xl w-56 mb-4 animate-pulse" />
+        <div className="h-12 bg-libre rounded-xl mb-4 animate-pulse" />
         <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
           {Array.from({ length: 20 }).map((_, i) => (
             <div key={i} className="aspect-square rounded-xl bg-libre animate-pulse" />
@@ -35,36 +37,58 @@ export default function LibresPage() {
   }
 
   if (error) {
-    return (
-      <div className="p-4 text-peligro">
-        Error al cargar las boletas: {error}
-      </div>
-    )
+    return <div className="p-4 text-peligro">Error al cargar las boletas: {error}</div>
   }
 
   return (
     <div className="p-4">
-      <p className="text-2xl font-bold text-zeus mb-4">
-        {libres.length} boletas libres
-      </p>
+      {/* ── Encabezado de página ────────────────────────────────── */}
+      <div className="flex items-center gap-3 mb-4">
+        <div>
+          <h1 className="text-xl font-bold text-zeus">🎟️ Boletas libres</h1>
+          <p className="text-sm text-libre-texto">
+            {libres.length > 0
+              ? `${libres.length} disponibles · toca una para comprometer`
+              : 'Sin boletas disponibles'}
+          </p>
+        </div>
+      </div>
 
       <input
         type="text"
         inputMode="numeric"
         placeholder="Buscar número (ej. 07)..."
         value={busqueda}
-        onChange={(e) =>
-          setBusqueda(e.target.value.replace(/\D/g, '').slice(0, 2))
-        }
+        onChange={(e) => setBusqueda(e.target.value.replace(/\D/g, '').slice(0, 2))}
         className="w-full border border-borde rounded-xl px-4 py-3 mb-4 bg-superficie focus:outline-none focus:border-rayo text-zeus transition-colors"
       />
 
       {filtradas.length === 0 ? (
-        <p className="text-center text-libre-texto py-12">
-          {busqueda
-            ? 'No hay boletas libres con ese número'
-            : '¡Todas las boletas están comprometidas! 🎉'}
-        </p>
+        <div className="text-center py-16">
+          {libres.length === 0 ? (
+            <>
+              <span className="text-6xl block mb-3">🎉</span>
+              <p className="text-xl font-bold text-zeus">¡Todo vendido!</p>
+              <p className="text-libre-texto text-sm mt-1">
+                Todas las boletas están comprometidas
+              </p>
+            </>
+          ) : (
+            <>
+              <span className="text-5xl block mb-3">🔍</span>
+              <p className="font-semibold text-zeus">Sin resultados</p>
+              <p className="text-libre-texto text-sm mt-1">
+                No hay boletas libres con ese número
+              </p>
+              <button
+                onClick={() => setBusqueda('')}
+                className="mt-4 text-sm text-rayo font-medium"
+              >
+                Limpiar búsqueda
+              </button>
+            </>
+          )}
+        </div>
       ) : (
         <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
           {filtradas.map((b) => (
@@ -90,11 +114,7 @@ export default function LibresPage() {
         />
       )}
 
-      {toast && (
-        <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 bg-zeus text-white px-5 py-3 rounded-xl shadow-lg text-sm z-50 whitespace-nowrap">
-          {toast}
-        </div>
-      )}
+      <Toast mensaje={toast} />
     </div>
   )
 }

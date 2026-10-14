@@ -5,11 +5,11 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function LoginForm() {
-  const [email, setEmail] = useState('')
+  const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading]   = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-  const router = useRouter()
+  const router       = useRouter()
   const searchParams = useSearchParams()
 
   const errorParam = searchParams.get('error')
@@ -49,15 +49,10 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="bg-superficie rounded-2xl shadow-lg p-8 w-full max-w-sm">
-      <div className="text-center mb-8">
-        <span className="text-5xl">⚡</span>
-        <h1 className="text-2xl font-bold text-zeus mt-2">Rifa por Zeus</h1>
-        <p className="text-libre-texto text-sm mt-1">Ayúdanos a pagar su operación</p>
-      </div>
-
+    /* Tarjeta de cristal sobre la foto de Zeus */
+    <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-6 w-full border border-white/30">
       {errorMsg && (
-        <div className="bg-red-50 border border-red-200 text-peligro text-sm rounded-xl p-3 mb-6">
+        <div className="bg-red-50 border border-red-200 text-peligro text-sm rounded-xl p-3 mb-5">
           {errorMsg}
         </div>
       )}
@@ -65,7 +60,7 @@ export default function LoginForm() {
       <button
         onClick={handleGoogle}
         disabled={loading}
-        className="w-full flex items-center justify-center gap-3 border border-borde rounded-xl py-3 px-4 text-zeus font-medium hover:bg-fondo transition-colors disabled:opacity-50 mb-6 min-h-[44px]"
+        className="w-full flex items-center justify-center gap-3 border border-borde rounded-xl py-3 px-4 text-zeus font-medium hover:bg-fondo active:scale-95 transition-all disabled:opacity-50 mb-5 min-h-[44px]"
       >
         <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
           <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z" />
@@ -76,7 +71,7 @@ export default function LoginForm() {
         Continuar con Google
       </button>
 
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-5">
         <div className="flex-1 h-px bg-borde" />
         <span className="text-libre-texto text-xs">o</span>
         <div className="flex-1 h-px bg-borde" />
@@ -114,7 +109,7 @@ export default function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-rayo text-zeus font-bold rounded-xl py-3 hover:brightness-95 transition-all disabled:opacity-50 min-h-[44px]"
+          className="w-full bg-rayo text-zeus font-bold rounded-xl py-3 hover:brightness-95 active:scale-95 transition-all disabled:opacity-50 min-h-[44px]"
         >
           {loading ? 'Entrando...' : 'Entrar'}
         </button>

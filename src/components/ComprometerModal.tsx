@@ -5,6 +5,11 @@ import { createClient } from '@/lib/supabase/client'
 import { formatNumero } from '@/lib/formato'
 import { esCelularColombia } from '@/lib/validaciones'
 
+const EMAIL_A_NOMBRE: Record<string, string> = {
+  'felipet27@gmail.com':      'Felipe',
+  'profejohana109@gmail.com': 'Joha',
+}
+
 type Props = {
   numero: number
   onClose: () => void
@@ -12,12 +17,12 @@ type Props = {
 }
 
 export default function ComprometerModal({ numero, onClose, onSuccess }: Props) {
-  const [nombre, setNombre] = useState('')
+  const [nombre, setNombre]   = useState('')
   const [celular, setCelular] = useState('')
-  const [notas, setNotas] = useState('')
-  const [pagada, setPagada] = useState(false)
+  const [notas, setNotas]     = useState('')
+  const [pagada, setPagada]   = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError]     = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -31,12 +36,17 @@ export default function ComprometerModal({ numero, onClose, onSuccess }: Props) 
     setError(null)
 
     const supabase = createClient()
+
+    // Obtener el nombre del usuario logueado
+    const { data: { user } } = await supabase.auth.getUser()
+    const responsable = EMAIL_A_NOMBRE[user?.email ?? ''] ?? null
+
     const { error: rpcError } = await supabase.rpc('comprometer_boleta', {
-      p_numero: numero,
-      p_nombre: nombre.trim(),
+      p_numero:  numero,
+      p_nombre:  nombre.trim(),
       p_celular: celular.replace(/\D/g, ''),
-      p_notas: notas.trim() || null,
-      p_pagada: pagada,
+      p_notas:   notas.trim() || null,
+      p_pagada:  pagada,
     })
 
     if (rpcError) {
@@ -45,17 +55,26 @@ export default function ComprometerModal({ numero, onClose, onSuccess }: Props) 
         : 'Error al guardar. Intenta de nuevo.'
       setError(msg)
       setLoading(false)
-    } else {
-      onSuccess(numero)
+      return
     }
+
+    // Guardar quién vendió la boleta
+    if (responsable) {
+      await supabase
+        .from('boletas')
+        .update({ responsable })
+        .eq('numero', numero)
+    }
+
+    onSuccess(numero)
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/50"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/40 backdrop-blur-sm overlay-in"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-superficie rounded-2xl w-full max-w-sm p-6 shadow-xl">
+      <div className="modal-up bg-superficie rounded-2xl w-full max-w-sm p-6 shadow-2xl">
         <h2 className="text-lg font-bold text-zeus mb-5">
           Comprometer boleta {formatNumero(numero)}
         </h2>
@@ -117,7 +136,7 @@ export default function ComprometerModal({ numero, onClose, onSuccess }: Props) 
           <div className="flex items-center justify-between py-1">
             <div>
               <p className="text-sm font-medium text-zeus">¿Ya pagó?</p>
-              <p className="text-xs text-libre-texto">{pagada ? 'Pagada' : 'Debe'}</p>
+              <p className="text-xs text-libre-texto">{pagada ? 'Pagada ✓' : 'Pendiente de pago'}</p>
             </div>
             <button
               type="button"
@@ -141,14 +160,14 @@ export default function ComprometerModal({ numero, onClose, onSuccess }: Props) 
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="flex-1 border border-borde rounded-xl py-3 text-zeus font-medium hover:bg-fondo transition-colors disabled:opacity-50 min-h-[44px]"
+              className="flex-1 border border-borde rounded-xl py-3 text-zeus font-medium hover:bg-fondo active:scale-95 transition-all disabled:opacity-50 min-h-[44px]"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-rayo text-zeus font-bold rounded-xl py-3 hover:brightness-95 transition-all disabled:opacity-50 min-h-[44px]"
+              className="flex-1 bg-rayo text-zeus font-bold rounded-xl py-3 hover:brightness-95 active:scale-95 transition-all disabled:opacity-50 min-h-[44px]"
             >
               {loading ? 'Guardando...' : 'Comprometer'}
             </button>

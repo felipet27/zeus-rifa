@@ -11,3 +11,30 @@
     color-scheme: light;
   }
 }
+
+/* ── Modales: slide-up + fade ──────────────────────────────── */
+@keyframes modal-up {
+  from { opacity: 0; transform: translateY(1.5rem) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)      scale(1);    }
+}
+.modal-up {
+  animation: modal-up 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+/* ── Toast: slide-up ───────────────────────────────────────── */
+@keyframes toast-up {
+  from { opacity: 0; transform: translateY(0.5rem); }
+  to   { opacity: 1; transform: translateY(0);      }
+}
+.toast-up {
+  animation: toast-up 0.2s ease-out forwards;
+}
+
+/* ── Overlay: fade ─────────────────────────────────────────── */
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.overlay-in {
+  animation: overlay-in 0.2s ease forwards;
+}

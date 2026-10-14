@@ -1,0 +1,18 @@
+{
+  "name": "Rifa por Zeus",
+  "short_name": "RifaZeus",
+  "description": "Administración de boletas de la rifa para la operación de Zeus",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1F1F23",
+  "theme_color": "#1F1F23",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/perro.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

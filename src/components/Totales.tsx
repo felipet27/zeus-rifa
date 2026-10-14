@@ -8,31 +8,38 @@ type Props = {
 
 export default function Totales({ boletas }: Props) {
   const comprometidas = boletas.filter((b) => b.estado === 'comprometida')
-  const pagadas = comprometidas.filter((b) => b.pagada)
-  const debe = comprometidas.filter((b) => !b.pagada)
-  const libres = boletas.filter((b) => b.estado === 'libre')
+  const pagadas       = comprometidas.filter((b) => b.pagada)
+  const debe          = comprometidas.filter((b) => !b.pagada)
+  const libres        = boletas.filter((b) => b.estado === 'libre')
 
-  const recaudado = pagadas.length * RIFA.valorBoleta
-  const paraZeus = recaudado - RIFA.premio
+  const recaudado    = pagadas.length * RIFA.valorBoleta
+  const paraZeus     = recaudado - RIFA.premio
   const potencialZeus = RIFA.totalBoletas * RIFA.valorBoleta - RIFA.premio
-  const progreso = (comprometidas.length / RIFA.totalBoletas) * 100
+  const progreso     = (comprometidas.length / RIFA.totalBoletas) * 100
 
   return (
     <div className="bg-superficie border border-borde rounded-2xl p-4 mb-4">
       {/* Barra de progreso */}
       <div className="mb-4">
-        <div className="flex justify-between text-sm mb-1.5">
+        <div className="flex justify-between text-sm mb-2">
           <span className="font-semibold text-zeus">
             {comprometidas.length} de {RIFA.totalBoletas} vendidas
           </span>
           <span className="text-libre-texto">{libres.length} libres</span>
         </div>
-        <div className="h-3 bg-libre rounded-full overflow-hidden">
+        <div className="h-5 bg-libre rounded-full overflow-hidden shadow-inner">
           <div
-            className="h-full bg-rayo rounded-full transition-all duration-500"
-            style={{ width: `${progreso}%` }}
+            className="h-full rounded-full transition-all duration-700"
+            style={{
+              width: `${progreso}%`,
+              background: 'linear-gradient(to right, #F4B400, #FCD34D)',
+              boxShadow: progreso > 0 ? '0 0 10px rgba(244,180,0,0.45)' : 'none',
+            }}
           />
         </div>
+        <p className="text-right text-xs text-libre-texto mt-1">
+          {progreso.toFixed(0)}%
+        </p>
       </div>
 
       {/* Pagadas / Debe */}

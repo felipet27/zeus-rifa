@@ -7,30 +7,31 @@ import { formatNumero, formatCelular, formatCOP } from '@/lib/formato'
 import { filtrarBoletas, type FiltroEstado, type Orden } from '@/lib/busqueda'
 import { RIFA } from '@/config/rifa'
 import AccionesBoleta from '@/components/AccionesBoleta'
+import Toast from '@/components/Toast'
 
 const ESTADOS: { key: FiltroEstado; label: string }[] = [
-  { key: 'todas', label: 'Todas' },
-  { key: 'libres', label: 'Libres' },
-  { key: 'comprometidas', label: 'Comprometidas' },
-  { key: 'pagadas', label: 'Pagadas' },
-  { key: 'debe', label: 'Debe' },
+  { key: 'todas',          label: 'Todas'          },
+  { key: 'libres',         label: 'Libres'         },
+  { key: 'comprometidas',  label: 'Comprometidas'  },
+  { key: 'pagadas',        label: 'Pagadas'        },
+  { key: 'debe',           label: 'Debe'           },
 ]
 
 const ORDENES: { key: Orden; label: string }[] = [
-  { key: 'numero', label: 'Número ↑' },
-  { key: 'nombre', label: 'Nombre A–Z' },
+  { key: 'numero',    label: 'Número ↑'   },
+  { key: 'nombre',    label: 'Nombre A–Z' },
   { key: 'recientes', label: 'Más recientes' },
 ]
 
 export default function BuscarContent() {
-  const router = useRouter()
+  const router       = useRouter()
   const searchParams = useSearchParams()
   const { boletas, loading, error } = useBoletas()
   const [toast, setToast] = useState<string | null>(null)
 
-  const q = searchParams.get('q') ?? ''
+  const q      = searchParams.get('q') ?? ''
   const estado = (searchParams.get('estado') ?? 'todas') as FiltroEstado
-  const orden = (searchParams.get('orden') ?? 'numero') as Orden
+  const orden  = (searchParams.get('orden') ?? 'numero') as Orden
 
   const debouncedQ = useDeferredValue(q)
 
@@ -53,14 +54,12 @@ export default function BuscarContent() {
     ? []
     : filtrarBoletas(boletas, debouncedQ, estado, orden)
 
-  // Resumen por persona: si alguien tiene varias boletas en los resultados
   const resumenPersona = (() => {
     if (!debouncedQ || resultados.length < 2) return null
-    const comprometidas = resultados.filter((b) => b.estado === 'comprometida')
-    if (comprometidas.length < 2) return null
-    // Agrupar por celular
-    const grupos = new Map<string, typeof comprometidas>()
-    comprometidas.forEach((b) => {
+    const comp = resultados.filter((b) => b.estado === 'comprometida')
+    if (comp.length < 2) return null
+    const grupos = new Map<string, typeof comp>()
+    comp.forEach((b) => {
       const k = b.celular ?? ''
       if (!grupos.has(k)) grupos.set(k, [])
       grupos.get(k)!.push(b)
@@ -77,7 +76,9 @@ export default function BuscarContent() {
 
   return (
     <div className="p-4">
-      {/* Campo de búsqueda */}
+      {/* ── Encabezado de página ────────────────────────────────── */}
+      <h1 className="text-xl font-bold text-zeus mb-3">🔍 Buscar boletas</h1>
+
       <input
         type="search"
         placeholder="Número, nombre o celular..."
@@ -93,7 +94,7 @@ export default function BuscarContent() {
           <button
             key={op.key}
             onClick={() => setParam('estado', op.key)}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors min-h-[32px] ${
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium active:scale-95 transition-all min-h-[32px] ${
               estado === op.key
                 ? 'bg-zeus text-white'
                 : 'bg-superficie border border-borde text-zeus hover:bg-fondo'
@@ -110,7 +111,7 @@ export default function BuscarContent() {
           <button
             key={op.key}
             onClick={() => setParam('orden', op.key)}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors min-h-[32px] ${
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium active:scale-95 transition-all min-h-[32px] ${
               orden === op.key
                 ? 'bg-rayo text-zeus'
                 : 'bg-superficie border border-borde text-zeus hover:bg-fondo'
@@ -124,24 +125,20 @@ export default function BuscarContent() {
       {hayFiltros && (
         <button
           onClick={() => router.replace('/buscar', { scroll: false })}
-          className="text-xs text-libre-texto underline mb-3 block"
+          className="text-xs text-libre-texto underline mb-3 block hover:text-zeus transition-colors"
         >
           Limpiar filtros
         </button>
       )}
 
-      {/* Resumen por persona */}
       {resumenPersona && (
         <div className="bg-buganvilla/10 rounded-xl p-3 mb-3 space-y-1">
           {resumenPersona.map((r, i) => (
-            <p key={i} className="text-xs text-buganvilla font-medium">
-              {r}
-            </p>
+            <p key={i} className="text-xs text-buganvilla font-medium">{r}</p>
           ))}
         </div>
       )}
 
-      {/* Resultados */}
       {loading ? (
         <div className="space-y-2 animate-pulse">
           {[1, 2, 3, 4].map((i) => (
@@ -149,15 +146,31 @@ export default function BuscarContent() {
           ))}
         </div>
       ) : resultados.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-libre-texto">No hay boletas que coincidan</p>
-          {hayFiltros && (
-            <button
-              onClick={() => router.replace('/buscar', { scroll: false })}
-              className="mt-3 text-sm text-rayo font-medium"
-            >
-              Limpiar búsqueda
-            </button>
+        <div className="text-center py-16">
+          {!q && !hayFiltros ? (
+            <>
+              <span className="text-6xl block mb-3">🔍</span>
+              <p className="font-semibold text-zeus">Escribe para buscar</p>
+              <p className="text-libre-texto text-sm mt-1">
+                Por número, nombre o celular
+              </p>
+            </>
+          ) : (
+            <>
+              <span className="text-5xl block mb-3">😕</span>
+              <p className="font-semibold text-zeus">Sin resultados</p>
+              <p className="text-libre-texto text-sm mt-1">
+                Prueba con otro nombre, número o celular
+              </p>
+              {hayFiltros && (
+                <button
+                  onClick={() => router.replace('/buscar', { scroll: false })}
+                  className="mt-4 text-sm text-rayo font-medium"
+                >
+                  Limpiar búsqueda
+                </button>
+              )}
+            </>
           )}
         </div>
       ) : (
@@ -169,7 +182,11 @@ export default function BuscarContent() {
             {resultados.map((b) => (
               <div
                 key={b.numero}
-                className="bg-superficie border border-borde rounded-xl p-4"
+                className={`bg-superficie border border-borde rounded-xl p-4 ${
+                  b.estado === 'comprometida'
+                    ? `border-l-4 ${b.pagada ? 'border-l-pagada' : 'border-l-debe'}`
+                    : ''
+                }`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3 min-w-0">
@@ -179,9 +196,7 @@ export default function BuscarContent() {
                     <div className="min-w-0">
                       {b.nombre ? (
                         <>
-                          <p className="font-semibold text-zeus truncate">
-                            {b.nombre}
-                          </p>
+                          <p className="font-semibold text-zeus truncate">{b.nombre}</p>
                           <p className="text-sm text-libre-texto">
                             {formatCelular(b.celular!)}
                           </p>
@@ -200,7 +215,7 @@ export default function BuscarContent() {
                           : 'bg-debe/10 text-debe'
                     }`}
                   >
-                    {b.estado === 'libre' ? 'Libre' : b.pagada ? 'Pagada' : 'Debe'}
+                    {b.estado === 'libre' ? 'Libre' : b.pagada ? '✓ Pagada' : 'Debe'}
                   </span>
                 </div>
                 {b.notas && (
@@ -215,11 +230,7 @@ export default function BuscarContent() {
         </>
       )}
 
-      {toast && (
-        <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 bg-zeus text-white px-5 py-3 rounded-xl shadow-lg text-sm z-50 whitespace-nowrap">
-          {toast}
-        </div>
-      )}
+      <Toast mensaje={toast} />
     </div>
   )
 }

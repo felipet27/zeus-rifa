@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Navbar from '@/components/Navbar'
+import InstallBanner from '@/components/InstallBanner'
 
 const ALLOWED_EMAILS = ['felipet27@gmail.com', 'profejohana109@gmail.com']
 
@@ -20,6 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="pb-20 md:pb-0 md:pt-16 max-w-5xl mx-auto">
         {children}
       </main>
+      <InstallBanner />
     </div>
   )
 }

@@ -13,11 +13,11 @@ type Props = {
 }
 
 export default function EditarBoletaModal({ boleta, onClose, onSuccess }: Props) {
-  const [nombre, setNombre] = useState(boleta.nombre ?? '')
+  const [nombre, setNombre]   = useState(boleta.nombre ?? '')
   const [celular, setCelular] = useState(boleta.celular ?? '')
-  const [notas, setNotas] = useState(boleta.notas ?? '')
+  const [notas, setNotas]     = useState(boleta.notas ?? '')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError]     = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -34,9 +34,9 @@ export default function EditarBoletaModal({ boleta, onClose, onSuccess }: Props)
     const { error: dbError } = await supabase
       .from('boletas')
       .update({
-        nombre: nombre.trim(),
+        nombre:  nombre.trim(),
         celular: celular.replace(/\D/g, ''),
-        notas: notas.trim() || null,
+        notas:   notas.trim() || null,
       })
       .eq('numero', boleta.numero)
 
@@ -50,10 +50,10 @@ export default function EditarBoletaModal({ boleta, onClose, onSuccess }: Props)
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/50"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/40 backdrop-blur-sm overlay-in"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-superficie rounded-2xl w-full max-w-sm p-6 shadow-xl">
+      <div className="modal-up bg-superficie rounded-2xl w-full max-w-sm p-6 shadow-2xl">
         <h2 className="text-lg font-bold text-zeus mb-5">
           Editar boleta {formatNumero(boleta.numero)}
         </h2>
@@ -114,14 +114,14 @@ export default function EditarBoletaModal({ boleta, onClose, onSuccess }: Props)
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="flex-1 border border-borde rounded-xl py-3 text-zeus font-medium hover:bg-fondo transition-colors disabled:opacity-50 min-h-[44px]"
+              className="flex-1 border border-borde rounded-xl py-3 text-zeus font-medium hover:bg-fondo active:scale-95 transition-all disabled:opacity-50 min-h-[44px]"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-rayo text-zeus font-bold rounded-xl py-3 hover:brightness-95 transition-all disabled:opacity-50 min-h-[44px]"
+              className="flex-1 bg-rayo text-zeus font-bold rounded-xl py-3 hover:brightness-95 active:scale-95 transition-all disabled:opacity-50 min-h-[44px]"
             >
               {loading ? 'Guardando...' : 'Guardar'}
             </button>

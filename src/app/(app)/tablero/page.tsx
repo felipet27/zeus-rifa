@@ -2,21 +2,22 @@
 
 import { useState, useMemo } from 'react'
 import { useBoletas } from '@/hooks/useBoletas'
-import { formatNumero, formatCelular } from '@/lib/formato'
+import { formatNumero, formatCelular, formatCOP } from '@/lib/formato'
 import { compartirODescargar } from '@/lib/generarImagen'
+import { RIFA } from '@/config/rifa'
 import TableroGrid from '@/components/TableroGrid'
 import ComprometerModal from '@/components/ComprometerModal'
 import AccionesBoleta from '@/components/AccionesBoleta'
+import Toast from '@/components/Toast'
 import type { Boleta } from '@/types/boleta'
 
 export default function TableroPage() {
   const { boletas, loading, error } = useBoletas()
-  const [libreSeleccionada, setLibreSeleccionada] = useState<number | null>(null)
+  const [libreSeleccionada, setLibreSeleccionada]             = useState<number | null>(null)
   const [comprometidaSeleccionada, setComprometidaSeleccionada] = useState<Boleta | null>(null)
   const [generando, setGenerando] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
+  const [toast, setToast]         = useState<string | null>(null)
 
-  // Sincronizar el detalle con actualizaciones de Realtime
   const boletaDetalle = useMemo(() => {
     if (!comprometidaSeleccionada) return null
     return boletas.find((b) => b.numero === comprometidaSeleccionada.numero) ?? null
@@ -39,12 +40,15 @@ export default function TableroPage() {
     }
   }
 
-  const libres = boletas.filter((b) => b.estado === 'libre').length
+  const libres       = boletas.filter((b) => b.estado === 'libre').length
+  const comprometidas = 100 - libres
 
   if (loading) {
     return (
       <div className="p-4">
-        <div className="w-full aspect-[10/19] bg-libre rounded-xl animate-pulse" />
+        <div className="h-28 bg-libre rounded-2xl animate-pulse mb-4" />
+        <div className="h-10 bg-libre rounded-xl animate-pulse mb-4" />
+        <div className="w-full aspect-square bg-libre rounded-xl animate-pulse" />
       </div>
     )
   }
@@ -53,29 +57,39 @@ export default function TableroPage() {
 
   return (
     <div className="p-4">
-      {/* Contador rápido */}
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-sm text-libre-texto">
-          <span className="font-bold text-zeus">{100 - libres}</span>/100 comprometidas
-          {' · '}
-          <span className="font-bold text-zeus">{libres}</span> libres
-        </p>
+      {/* ── Banner del tablero ───────────────────────────────────── */}
+      <div className="bg-zeus rounded-2xl px-4 pt-4 pb-4 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h1 className="text-rayo font-bold text-lg leading-tight">⚡ {RIFA.titulo}</h1>
+            <p className="text-white/50 text-xs mt-0.5">
+              Premio {formatCOP(RIFA.premio)} · Valor Boleta {formatCOP(RIFA.valorBoleta)} · Viernes 30 oct
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-white font-black text-2xl tabular-nums leading-none">
+              {comprometidas}
+              <span className="text-white/30 font-normal text-sm">/100</span>
+            </p>
+            <p className="text-white/40 text-xs">comprometidas</p>
+          </div>
+        </div>
+
+        {/* Botón descarga — prominente, ancho completo */}
         <button
           onClick={handleDescargar}
           disabled={generando}
-          className="flex items-center gap-1.5 bg-rayo text-zeus font-bold text-sm px-4 py-2 rounded-xl hover:brightness-95 transition-all disabled:opacity-60 min-h-[40px]"
+          className="w-full bg-rayo text-zeus font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:brightness-95 active:scale-[0.98] transition-all disabled:opacity-60 text-sm"
         >
           {generando ? (
-            <>
-              <span className="animate-spin text-base">⏳</span> Generando…
-            </>
+            <><span className="animate-spin text-base">⏳</span> Generando imagen…</>
           ) : (
-            <>⬇️ Descargar</>
+            <>⬇️ Descargar imagen para compartir</>
           )}
         </button>
       </div>
 
-      {/* Tablero */}
+      {/* ── Tablero rompecabezas ─────────────────────────────────── */}
       <TableroGrid
         boletas={boletas}
         onLibreClick={(n) => setLibreSeleccionada(n)}
@@ -95,7 +109,7 @@ export default function TableroPage() {
         </span>
       </div>
 
-      {/* Modal comprometer boleta libre */}
+      {/* ── Modal comprometer boleta libre ──────────────────────── */}
       {libreSeleccionada !== null && (
         <ComprometerModal
           numero={libreSeleccionada}
@@ -107,14 +121,13 @@ export default function TableroPage() {
         />
       )}
 
-      {/* Sheet de detalle para boleta comprometida */}
+      {/* ── Sheet de detalle para boleta comprometida ───────────── */}
       {boletaDetalle && (
         <div
-          className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/50"
+          className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/40 backdrop-blur-sm overlay-in"
           onClick={(e) => e.target === e.currentTarget && setComprometidaSeleccionada(null)}
         >
-          <div className="bg-superficie rounded-2xl w-full max-w-sm p-6 shadow-xl">
-            {/* Encabezado del detalle */}
+          <div className="modal-up bg-superficie rounded-2xl w-full max-w-sm p-6 shadow-2xl">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="text-xs text-libre-texto mb-0.5">Boleta</p>
@@ -122,17 +135,15 @@ export default function TableroPage() {
                   {formatNumero(boletaDetalle.numero)}
                 </p>
               </div>
-              <div className="text-right">
-                <span
-                  className={`text-xs font-medium px-2.5 py-1 rounded-lg ${
-                    boletaDetalle.pagada
-                      ? 'bg-pagada/10 text-pagada'
-                      : 'bg-debe/10 text-debe'
-                  }`}
-                >
-                  {boletaDetalle.pagada ? 'Pagada' : 'Debe'}
-                </span>
-              </div>
+              <span
+                className={`text-xs font-medium px-2.5 py-1 rounded-lg ${
+                  boletaDetalle.pagada
+                    ? 'bg-pagada/10 text-pagada'
+                    : 'bg-debe/10 text-debe'
+                }`}
+              >
+                {boletaDetalle.pagada ? '✓ Pagada' : 'Debe'}
+              </span>
             </div>
 
             <div className="space-y-1 mb-2">
@@ -149,14 +160,13 @@ export default function TableroPage() {
               boleta={boletaDetalle}
               onMensaje={(msg) => {
                 mostrarToast(msg)
-                // Si la boleta fue liberada, cerrar el sheet
                 if (msg.includes('liberada')) setComprometidaSeleccionada(null)
               }}
             />
 
             <button
               onClick={() => setComprometidaSeleccionada(null)}
-              className="mt-3 w-full text-center text-xs text-libre-texto py-2"
+              className="mt-3 w-full text-center text-xs text-libre-texto py-2 hover:text-zeus transition-colors"
             >
               Cerrar
             </button>
@@ -164,11 +174,7 @@ export default function TableroPage() {
         </div>
       )}
 
-      {toast && (
-        <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 bg-zeus text-white px-5 py-3 rounded-xl shadow-lg text-sm z-50 whitespace-nowrap">
-          {toast}
-        </div>
-      )}
+      <Toast mensaje={toast} />
     </div>
   )
 }

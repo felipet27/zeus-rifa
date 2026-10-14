@@ -19,23 +19,23 @@ export default function ConfirmDialog({
 }: Props) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/50"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/40 backdrop-blur-sm overlay-in"
       onClick={(e) => e.target === e.currentTarget && onCancelar()}
     >
-      <div className="bg-superficie rounded-2xl w-full max-w-sm p-6 shadow-xl">
+      <div className="modal-up bg-superficie rounded-2xl w-full max-w-sm p-6 shadow-2xl">
         <p className="text-zeus text-base mb-6 leading-relaxed">{mensaje}</p>
         <div className="flex gap-3">
           <button
             onClick={onCancelar}
             disabled={cargando}
-            className="flex-1 border border-borde rounded-xl py-3 text-zeus font-medium hover:bg-fondo transition-colors disabled:opacity-50 min-h-[44px]"
+            className="flex-1 border border-borde rounded-xl py-3 text-zeus font-medium hover:bg-fondo active:scale-95 transition-all disabled:opacity-50 min-h-[44px]"
           >
             Cancelar
           </button>
           <button
             onClick={onConfirmar}
             disabled={cargando}
-            className={`flex-1 rounded-xl py-3 font-bold transition-all disabled:opacity-50 min-h-[44px] ${
+            className={`flex-1 rounded-xl py-3 font-bold active:scale-95 transition-all disabled:opacity-50 min-h-[44px] ${
               variante === 'peligro'
                 ? 'bg-peligro text-white hover:brightness-90'
                 : 'bg-rayo text-zeus hover:brightness-95'
