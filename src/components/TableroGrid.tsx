@@ -12,7 +12,8 @@ type Props = {
 }
 
 export default function TableroGrid({ boletas, onLibreClick, onComprometidaClick }: Props) {
-  const [imgRatio, setImgRatio] = useState(1336 / 2576) // ratio especificado: w/h
+  // Proporción real de la foto (ancho / alto)
+  const [imgRatio, setImgRatio] = useState(1336 / 2576)
 
   useEffect(() => {
     const img = new Image()
@@ -23,7 +24,7 @@ export default function TableroGrid({ boletas, onLibreClick, onComprometidaClick
   const boletaMap = new Map(boletas.map((b) => [b.numero, b]))
 
   return (
-    <div className="grid grid-cols-10 gap-0 w-full border border-white/20 overflow-hidden rounded-xl">
+    <div className="grid grid-cols-10 w-full rounded-xl overflow-hidden shadow-lg">
       {Array.from({ length: 100 }, (_, n) => {
         const boleta = boletaMap.get(n)
         const row = Math.floor(n / 10)
@@ -38,37 +39,53 @@ export default function TableroGrid({ boletas, onLibreClick, onComprometidaClick
                 ? onComprometidaClick(boleta)
                 : onLibreClick(n)
             }
-            className="relative overflow-hidden focus:outline-none focus:ring-2 focus:ring-rayo focus:z-10"
-            style={{ aspectRatio: `${imgRatio}` }}
-            aria-label={`Boleta ${formatNumero(n)}${comprometida ? ` — ${boleta?.nombre}` : ' — libre'}`}
+            className="relative focus:outline-none focus:z-10 focus:ring-2 focus:ring-inset focus:ring-rayo"
+            style={{ aspectRatio: String(imgRatio) }}
           >
             {comprometida ? (
               <>
-                {/* Porción de la foto del perro */}
-                <img
-                  src={RIFA.imagen}
-                  alt=""
-                  aria-hidden="true"
-                  className="absolute"
-                  style={{
-                    width: '1000%',
-                    height: 'auto',
-                    top: `-${row * 100}%`,
-                    left: `-${col * 100}%`,
-                  }}
-                />
-                {/* Borde blanco (efecto rompecabezas) */}
+                {/*
+                  La clave del rompecabezas:
+                  - El div interior tiene overflow:hidden (funciona en todos los navegadores)
+                  - La imagen ocupa 10× el ancho de la celda (1000%)
+                  - transform: translate mueve la imagen para mostrar exactamente la porción correcta
+                  - col 0 → translate(0,0), col 1 → translate(-10%,0), col 9 → translate(-90%,0)
+                  - El 10% es relativo al tamaño de la imagen (que mide 10× la celda)
+                */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <img
+                    src={RIFA.imagen}
+                    alt=""
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '1000%',
+                      height: 'auto',
+                      maxWidth: 'none',
+                      transform: `translate(${-col * 10}%, ${-row * 10}%)`,
+                    }}
+                  />
+                </div>
+
+                {/* Línea blanca entre casillas (efecto rompecabezas) */}
                 <div className="absolute inset-0 border border-white/30 pointer-events-none" />
-                {/* Indicador de estado (solo en la app, no en la imagen descargable) */}
+
+                {/* Indicador de estado — solo visible en la app, no en el PNG */}
                 <div
-                  className={`absolute top-1 right-1 w-2 h-2 rounded-full ring-1 ring-white/40 ${
+                  className={`absolute top-0.5 right-0.5 w-2 h-2 rounded-full shadow-sm ${
                     boleta?.pagada ? 'bg-pagada' : 'bg-debe'
                   }`}
                 />
               </>
             ) : (
-              <div className="absolute inset-0 bg-libre border border-white/40 flex items-center justify-center">
-                <span className="text-libre-texto font-bold tabular-nums text-[clamp(8px,2vw,16px)] leading-none">
+              /* Casilla libre: gris + número */
+              <div className="absolute inset-0 bg-libre border border-white/50 flex items-center justify-center">
+                <span
+                  className="text-libre-texto font-bold tabular-nums select-none"
+                  style={{ fontSize: 'clamp(7px, 1.8vw, 15px)' }}
+                >
                   {formatNumero(n)}
                 </span>
               </div>
