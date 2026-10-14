@@ -1,0 +1,15 @@
+export const RIFA = {
+  titulo: 'RIFA POR ZEUS',
+  causa: 'Ayúdanos a pagar su operación',
+  nombrePerro: 'Zeus',
+  valorBoleta: 20_000,
+  premio: 800_000,
+  totalBoletas: 100,
+  fechaSorteo: '2026-10-30',
+  fechaSorteoTexto: 'viernes 30 de octubre',
+  loteria: 'Lotería de Medellín',
+  mecanica: 'dos últimas cifras',
+  responsable: 'Felipe Tangarife',
+  celularResponsable: '3173780801',
+  imagen: '/perro.jpg',
+} as const
