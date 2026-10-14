@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { formatNumero } from '@/lib/formato'
 import { RIFA } from '@/config/rifa'
 import type { Boleta } from '@/types/boleta'
@@ -9,9 +9,11 @@ type Props = {
   boletas: Boleta[]
   onLibreClick: (numero: number) => void
   onComprometidaClick: (boleta: Boleta) => void
+  // Ajusta el tablero al alto del contenedor (sin scroll) respetando la proporción de la foto
+  ajustarAlto?: boolean
 }
 
-export default function TableroGrid({ boletas, onLibreClick, onComprometidaClick }: Props) {
+export default function TableroGrid({ boletas, onLibreClick, onComprometidaClick, ajustarAlto = false }: Props) {
   // Proporción real de la foto (ancho / alto)
   const [imgRatio, setImgRatio] = useState(1336 / 2576)
 
@@ -21,10 +23,31 @@ export default function TableroGrid({ boletas, onLibreClick, onComprometidaClick
     img.src = RIFA.imagen
   }, [])
 
+  const contenedorRef = useRef<HTMLDivElement>(null)
+  const [ancho, setAncho] = useState<number | null>(null)
+
+  useEffect(() => {
+    const el = contenedorRef.current
+    if (!ajustarAlto || !el) return
+    const medir = () => setAncho(Math.floor(Math.min(el.clientWidth, el.clientHeight * imgRatio)))
+    medir()
+    const observer = new ResizeObserver(medir)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [ajustarAlto, imgRatio])
+
   const boletaMap = new Map(boletas.map((b) => [b.numero, b]))
 
-  return (
-    <div className="grid grid-cols-10 w-full rounded-xl overflow-hidden shadow-lg">
+  // Con el tablero ajustado, el número escala con el ancho real de la casilla
+  const tamañoNumero = ajustarAlto && ancho
+    ? `${Math.max(8, Math.min(15, (ancho / 10) * 0.4))}px`
+    : 'clamp(7px, 1.8vw, 15px)'
+
+  const tablero = (
+    <div
+      className="grid grid-cols-10 w-full rounded-xl overflow-hidden shadow-lg"
+      style={ajustarAlto ? { width: ancho ?? 0, visibility: ancho ? 'visible' : 'hidden' } : undefined}
+    >
       {Array.from({ length: 100 }, (_, n) => {
         const boleta = boletaMap.get(n)
         const row = Math.floor(n / 10)
@@ -84,7 +107,7 @@ export default function TableroGrid({ boletas, onLibreClick, onComprometidaClick
               <div className="absolute inset-0 bg-libre border border-white/50 flex items-center justify-center">
                 <span
                   className="text-libre-texto font-bold tabular-nums select-none"
-                  style={{ fontSize: 'clamp(7px, 1.8vw, 15px)' }}
+                  style={{ fontSize: tamañoNumero }}
                 >
                   {formatNumero(n)}
                 </span>
@@ -93,6 +116,14 @@ export default function TableroGrid({ boletas, onLibreClick, onComprometidaClick
           </button>
         )
       })}
+    </div>
+  )
+
+  if (!ajustarAlto) return tablero
+
+  return (
+    <div ref={contenedorRef} className="flex-1 min-h-0 w-full flex justify-center items-start">
+      {tablero}
     </div>
   )
 }

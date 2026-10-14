@@ -56,48 +56,42 @@ export default function TableroPage() {
   if (error) return <div className="p-4 text-peligro">Error: {error}</div>
 
   return (
-    <div className="p-4">
-      {/* ── Banner del tablero ───────────────────────────────────── */}
-      <div className="bg-zeus rounded-2xl px-4 pt-4 pb-4 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h1 className="text-rayo font-bold text-lg leading-tight">⚡ {RIFA.titulo}</h1>
-            <p className="text-white/50 text-xs mt-0.5">
-              Premio {formatCOP(RIFA.premio)} · Valor Boleta {formatCOP(RIFA.valorBoleta)} · Viernes 30 oct
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-white font-black text-2xl tabular-nums leading-none">
-              {comprometidas}
-              <span className="text-white/30 font-normal text-sm">/100</span>
-            </p>
-            <p className="text-white/40 text-xs">comprometidas</p>
-          </div>
+    <div className="px-4 py-3 md:py-4 flex flex-col h-[calc(100dvh-5rem)] md:h-[calc(100dvh-4rem)]">
+      {/* ── Encabezado compacto: título, avance y descarga en una fila ── */}
+      <div className="bg-zeus rounded-2xl pl-3.5 pr-2 py-2 mb-2 flex items-center gap-3 shrink-0">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-rayo font-bold text-base leading-tight truncate">⚡ {RIFA.titulo}</h1>
+          <p className="text-white/50 text-[11px] leading-snug truncate">
+            Premio {formatCOP(RIFA.premio)} · Boleta {formatCOP(RIFA.valorBoleta)} · 30 oct
+          </p>
         </div>
-
-        {/* Botón descarga — prominente, ancho completo */}
+        <div className="text-right shrink-0">
+          <p className="text-white font-black text-xl tabular-nums leading-none">
+            {comprometidas}
+            <span className="text-white/30 font-normal text-xs">/100</span>
+          </p>
+          <p className="text-white/40 text-[10px]">vendidas</p>
+        </div>
         <button
           onClick={handleDescargar}
           disabled={generando}
-          className="w-full bg-rayo text-zeus font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:brightness-95 active:scale-[0.98] transition-all disabled:opacity-60 text-sm"
+          aria-label="Descargar imagen para compartir"
+          className="shrink-0 bg-rayo text-zeus font-bold h-11 px-3 rounded-xl flex items-center gap-1.5 hover:brightness-95 active:scale-95 transition-all disabled:opacity-60 text-sm"
         >
-          {generando ? (
-            <><span className="animate-spin text-base">⏳</span> Generando imagen…</>
-          ) : (
-            <>⬇️ Descargar imagen para compartir</>
-          )}
+          {generando ? <span className="animate-spin">⏳</span> : <>⬇️ <span className="hidden sm:inline">Descargar</span><span className="sm:hidden">Imagen</span></>}
         </button>
       </div>
 
-      {/* ── Tablero rompecabezas ─────────────────────────────────── */}
+      {/* ── Tablero rompecabezas: ocupa el alto restante sin scroll ── */}
       <TableroGrid
         boletas={boletas}
         onLibreClick={(n) => setLibreSeleccionada(n)}
         onComprometidaClick={(b) => setComprometidaSeleccionada(b)}
+        ajustarAlto
       />
 
       {/* Leyenda */}
-      <div className="flex items-center gap-4 mt-3 text-xs text-libre-texto">
+      <div className="flex items-center justify-center gap-4 mt-2 text-[11px] text-libre-texto shrink-0">
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-pagada inline-block" /> Pagada
         </span>
@@ -105,7 +99,7 @@ export default function TableroPage() {
           <span className="w-2 h-2 rounded-full bg-debe inline-block" /> Debe
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-4 h-4 rounded bg-libre inline-block border border-borde" /> Libre
+          <span className="w-3 h-3 rounded bg-libre inline-block border border-borde" /> Libre
         </span>
       </div>
 
