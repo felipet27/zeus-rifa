@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import Navbar from '@/components/Navbar'
 import InstallBanner from '@/components/InstallBanner'
 
-const ALLOWED_EMAILS = ['felipet27@gmail.com', 'profejohana109@gmail.com']
+const ALLOWED_EMAILS = ['felipet27@gmail.com', 'profejohana109@gmail.com', 'johanak109@gmail.com']
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()

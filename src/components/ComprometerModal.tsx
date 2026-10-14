@@ -8,6 +8,7 @@ import { esCelularColombia } from '@/lib/validaciones'
 const EMAIL_A_NOMBRE: Record<string, string> = {
   'felipet27@gmail.com':      'Felipe',
   'profejohana109@gmail.com': 'Joha',
+  'johanak109@gmail.com':     'Joha',
 }
 
 type Props = {

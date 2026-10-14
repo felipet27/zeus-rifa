@@ -7,7 +7,8 @@ create table public.usuarios_permitidos (
 
 insert into public.usuarios_permitidos (email) values
   ('felipet27@gmail.com'),
-  ('profejohana109@gmail.com');
+  ('profejohana109@gmail.com'),
+  ('johanak109@gmail.com');
 
 alter table public.usuarios_permitidos enable row level security;
 -- Sin políticas: nadie la lee ni la modifica desde el cliente.

@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
-const ALLOWED_EMAILS = ['felipet27@gmail.com', 'profejohana109@gmail.com']
+const ALLOWED_EMAILS = ['felipet27@gmail.com', 'profejohana109@gmail.com', 'johanak109@gmail.com']
 const PUBLIC_PREFIXES = ['/login', '/auth']
 
 export async function middleware(request: NextRequest) {
