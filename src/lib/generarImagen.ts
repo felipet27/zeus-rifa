@@ -5,13 +5,22 @@ import type { Boleta } from '@/types/boleta'
 const C = {
   zeus:       '#1F1F23',
   rayo:       '#F4B400',
-  buganvilla: '#C2185B',
+  rosa:       '#F0628F',
   libre:      '#E7E5E0',
   libreTexto: '#5F5F5F',
   blanco:     '#FFFFFF',
-  fondo:      '#FAF8F3',
-  verde:      '#2E8B57',
+  tarjeta:    'rgba(255,255,255,0.07)',
+  tenue:      'rgba(255,255,255,0.6)',
 } as const
+
+// Lienzo lógico 9:16 — el formato exacto de estados de WhatsApp e historias de Instagram.
+// Todo se dibuja en estas coordenadas y se exporta al doble (2160×3840) para máxima nitidez.
+const ANCHO = 1080
+const ALTO  = 1920
+const ESCALA = 2
+
+// Zonas seguras: Instagram/WhatsApp tapan ~250px arriba (perfil) y ~250px abajo (responder).
+const MARGEN = 60
 
 const COP = (n: number) =>
   new Intl.NumberFormat('es-CO', {
@@ -28,194 +37,217 @@ async function cargarImagenParaCanvas(src: string): Promise<HTMLImageElement> {
   return img
 }
 
+// next/font registra Inter con un nombre interno (p. ej. "__Inter_abc123"),
+// así que se toma la familia real que usa el body para que el canvas no caiga a otra fuente.
+function familiaFuente(): string {
+  const body = getComputedStyle(document.body).fontFamily
+  return body ? `${body}, system-ui, sans-serif` : 'system-ui, sans-serif'
+}
+
+function fechaCorta(): string {
+  const d = new Date(`${RIFA.fechaSorteo}T12:00:00`)
+  const dia    = new Intl.DateTimeFormat('es-CO', { weekday: 'long' }).format(d)
+  const numero = d.getDate()
+  const mes    = new Intl.DateTimeFormat('es-CO', { month: 'short' }).format(d).replace('.', '')
+  return `${dia.charAt(0).toUpperCase()}${dia.slice(1)} ${numero} ${mes}`
+}
+
 export async function generarImagenRifa(boletas: Boleta[]): Promise<Blob> {
   await document.fonts.ready
-
-  const ANCHO  = 1080
-  const CELL_W = 108           // 1080 / 10 — entero exacto
-  const PAD    = 32
+  const FUENTE = familiaFuente()
+  const font = (peso: string, px: number) => `${peso} ${px}px ${FUENTE}`
 
   const perro = await cargarImagenParaCanvas(RIFA.imagen)
   const IMG_W = perro.naturalWidth
   const IMG_H = perro.naturalHeight
-  const CELL_H = Math.round(CELL_W * (IMG_H / IMG_W))
-  const GRID_H = CELL_H * 10
-
-  const HEADER_H = 200
-  const PROMO_H  = 280
-  const TOTAL_H  = HEADER_H + GRID_H + PROMO_H
 
   const canvas  = document.createElement('canvas')
-  canvas.width  = ANCHO
-  canvas.height = TOTAL_H
+  canvas.width  = ANCHO * ESCALA
+  canvas.height = ALTO * ESCALA
   const ctx = canvas.getContext('2d')!
+  ctx.scale(ESCALA, ESCALA)
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+
+  // Escribe texto reduciendo el tamaño si no cabe en el ancho disponible
+  function texto(
+    t: string, x: number, y: number,
+    peso: string, px: number, color: string,
+    maxW: number, align: CanvasTextAlign = 'center',
+  ) {
+    ctx.textAlign = align
+    ctx.fillStyle = color
+    let size = px
+    ctx.font = font(peso, size)
+    while (size > 10 && ctx.measureText(t).width > maxW) {
+      size -= 1
+      ctx.font = font(peso, size)
+    }
+    ctx.fillText(t, x, y)
+  }
 
   // ─── Fondo ──────────────────────────────────────────────────────
-  ctx.fillStyle = C.blanco
-  ctx.fillRect(0, 0, ANCHO, TOTAL_H)
+  ctx.fillStyle = C.zeus
+  ctx.fillRect(0, 0, ANCHO, ALTO)
+
+  const brillo = ctx.createRadialGradient(ANCHO / 2, 0, 0, ANCHO / 2, 0, ALTO * 0.6)
+  brillo.addColorStop(0, 'rgba(244,180,0,0.16)')
+  brillo.addColorStop(1, 'rgba(244,180,0,0)')
+  ctx.fillStyle = brillo
+  ctx.fillRect(0, 0, ANCHO, ALTO)
 
   // ══════════════════════════════════════════════════════════════════
   // ENCABEZADO
   // ══════════════════════════════════════════════════════════════════
-  ctx.fillStyle = C.zeus
-  ctx.fillRect(0, 0, ANCHO, HEADER_H)
-  ctx.textAlign = 'center'
-
-  ctx.fillStyle = C.rayo
-  ctx.font = 'bold 54px Inter, system-ui, sans-serif'
-  ctx.fillText(`⚡ ${RIFA.titulo} ⚡`, ANCHO / 2, 62)
-
-  ctx.fillStyle = C.buganvilla
-  ctx.font = '30px Inter, system-ui, sans-serif'
-  ctx.fillText(RIFA.causa, ANCHO / 2, 104)
-
-  ctx.fillStyle = C.blanco
-  ctx.font = 'bold 27px Inter, system-ui, sans-serif'
-  ctx.fillText(
-    `Premio ${COP(RIFA.premio)}  ·  Valor Boleta ${COP(RIFA.valorBoleta)}`,
-    ANCHO / 2, 144,
-  )
-
-  ctx.fillStyle = 'rgba(255,255,255,0.65)'
-  ctx.font = '21px Inter, system-ui, sans-serif'
-  ctx.fillText(
-    `Juega el Viernes 30 de Octubre por las 2 últimas cifras de la ${RIFA.loteria}`,
-    ANCHO / 2, 178,
-  )
+  ctx.textBaseline = 'alphabetic'
+  texto(`⚡ ${RIFA.titulo} ⚡`, ANCHO / 2, 272, 'bold', 78, C.rayo, ANCHO - MARGEN * 2)
+  texto(`${RIFA.nombrePerro} necesita ser operado 🐾`, ANCHO / 2, 328, '600', 36, C.rosa, ANCHO - MARGEN * 2)
 
   // ══════════════════════════════════════════════════════════════════
-  // CUADRÍCULA (rompecabezas)
+  // TABLERO (rompecabezas) — columna izquierda
   // ══════════════════════════════════════════════════════════════════
+  const BX = MARGEN
+  const BY = 372
+  const BW = 560
+  const BH = Math.round(BW * (IMG_H / IMG_W))   // misma proporción que la foto
+  const CELL_W = BW / 10
+  const CELL_H = BH / 10
+  const SRC_W  = IMG_W / 10
+  const SRC_H  = IMG_H / 10
+
   const boletaMap = new Map(boletas.map((b) => [b.numero, b]))
-  const GRID_Y    = HEADER_H
-  const SRC_W     = IMG_W / 10
-  const SRC_H     = IMG_H / 10
 
   ctx.save()
+  ctx.beginPath()
+  roundRect(ctx, BX, BY, BW, BH, 22)
+  ctx.clip()
+
   for (let n = 0; n < 100; n++) {
     const boleta = boletaMap.get(n)
     const row = Math.floor(n / 10)
     const col = n % 10
-    const dx  = col * CELL_W
-    const dy  = GRID_Y + row * CELL_H
+    const dx  = BX + col * CELL_W
+    const dy  = BY + row * CELL_H
 
     if (boleta?.estado === 'comprometida') {
-      ctx.drawImage(
-        perro,
-        Math.floor(col * SRC_W),
-        Math.floor(row * SRC_H),
-        Math.ceil(SRC_W),
-        Math.ceil(SRC_H),
-        dx, dy,
-        CELL_W, CELL_H,
-      )
+      ctx.drawImage(perro, col * SRC_W, row * SRC_H, SRC_W, SRC_H, dx, dy, CELL_W, CELL_H)
     } else {
       ctx.fillStyle = C.libre
       ctx.fillRect(dx, dy, CELL_W, CELL_H)
 
-      ctx.fillStyle    = C.libreTexto
-      ctx.font         = `bold ${Math.round(CELL_W * 0.38)}px Inter, system-ui, sans-serif`
-      ctx.textAlign    = 'center'
       ctx.textBaseline = 'middle'
-      ctx.fillText(formatNumero(n), dx + CELL_W / 2, dy + CELL_H / 2)
+      texto(formatNumero(n), dx + CELL_W / 2, dy + CELL_H / 2, 'bold', 24, C.libreTexto, CELL_W - 6)
       ctx.textBaseline = 'alphabetic'
     }
-
-    ctx.strokeStyle = C.blanco
-    ctx.lineWidth   = 1
-    ctx.strokeRect(dx + 0.5, dy + 0.5, CELL_W - 1, CELL_H - 1)
   }
+
+  // Líneas del rompecabezas
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)'
+  ctx.lineWidth   = 1
+  ctx.beginPath()
+  for (let i = 1; i < 10; i++) {
+    ctx.moveTo(BX + i * CELL_W, BY)
+    ctx.lineTo(BX + i * CELL_W, BY + BH)
+    ctx.moveTo(BX, BY + i * CELL_H)
+    ctx.lineTo(BX + BW, BY + i * CELL_H)
+  }
+  ctx.stroke()
   ctx.restore()
 
+  // Marco del tablero
+  ctx.strokeStyle = C.rayo
+  ctx.lineWidth   = 4
+  ctx.beginPath()
+  roundRect(ctx, BX - 2, BY - 2, BW + 4, BH + 4, 24)
+  ctx.stroke()
+
   // ══════════════════════════════════════════════════════════════════
-  // SECCIÓN FLYER — para publicar en redes sociales
+  // TARJETAS DE DATOS — columna derecha
   // ══════════════════════════════════════════════════════════════════
-  const PROMO_Y = GRID_Y + GRID_H
+  const libres = 100 - boletas.filter((b) => b.estado === 'comprometida').length
 
-  // Fondo cálido
-  ctx.fillStyle = C.fondo
-  ctx.fillRect(0, PROMO_Y, ANCHO, PROMO_H)
+  const CX   = BX + BW + 30
+  const CW   = ANCHO - MARGEN - CX
+  const GAP  = 20
+  const CH   = (BH - GAP * 3) / 4
+  const MID  = CX + CW / 2
+  const INNER = CW - 36
 
-  // Línea separadora rayo
-  ctx.fillStyle = C.rayo
-  ctx.fillRect(0, PROMO_Y, ANCHO, 5)
+  const tarjetas: ((y: number) => void)[] = [
+    (y) => {
+      texto('🏆  PREMIO', MID, y + 62, 'bold', 24, C.tenue, INNER)
+      texto(COP(RIFA.premio), MID, y + 140, '800', 62, C.rayo, INNER)
+      texto(`${RIFA.mecanica.charAt(0).toUpperCase()}${RIFA.mecanica.slice(1)} de la`, MID, y + 186, '500', 22, C.tenue, INNER)
+      texto(RIFA.loteria, MID, y + 216, '500', 22, C.tenue, INNER)
+    },
+    (y) => {
+      texto('🎟️  VALOR BOLETA', MID, y + 62, 'bold', 24, C.tenue, INNER)
+      texto(COP(RIFA.valorBoleta), MID, y + 140, '800', 62, C.blanco, INNER)
+      texto('Paga por Nequi', MID, y + 196, '500', 22, C.tenue, INNER)
+    },
+    (y) => {
+      texto('📅  JUEGA', MID, y + 62, 'bold', 24, C.tenue, INNER)
+      texto(fechaCorta(), MID, y + 136, '800', 48, C.blanco, INNER)
+      texto(RIFA.loteria, MID, y + 190, '500', 22, C.tenue, INNER)
+    },
+    (y) => {
+      if (libres === 0) {
+        texto('🎉', MID, y + 100, 'normal', 56, C.blanco, INNER)
+        texto('¡Rifa agotada!', MID, y + 170, '800', 40, C.rayo, INNER)
+        return
+      }
+      texto('🔥  ¡QUEDAN!', MID, y + 62, 'bold', 24, C.tenue, INNER)
+      texto(`${libres} ${libres === 1 ? 'número' : 'números'}`, MID, y + 130, '800', 50, C.rayo, INNER)
 
-  // Título CTA
-  ctx.fillStyle    = C.zeus
-  ctx.textAlign    = 'center'
-  ctx.textBaseline = 'alphabetic'
-  ctx.font         = 'bold 42px Inter, system-ui, sans-serif'
-  ctx.fillText('Zeus necesita ser operado 🐾', ANCHO / 2, PROMO_Y + 62)
-
-  // Subtexto causa
-  ctx.fillStyle = C.buganvilla
-  ctx.font      = '26px Inter, system-ui, sans-serif'
-  ctx.fillText(RIFA.causa, ANCHO / 2, PROMO_Y + 100)
-
-  // Tarjetas de datos — 3 columnas
-  const tarjetas = [
-    { emoji: '💰', label: 'Valor Boleta',        valor: COP(RIFA.valorBoleta) },
-    { emoji: '🏆', label: 'Premio',               valor: COP(RIFA.premio)      },
-    { emoji: '📅', label: 'Lotería de Medellín', valor: 'Viernes 30 oct' },
+      // Barra de progreso
+      const PX = CX + 24
+      const PW = CW - 48
+      const PY = y + 158
+      ctx.fillStyle = 'rgba(255,255,255,0.14)'
+      ctx.beginPath()
+      roundRect(ctx, PX, PY, PW, 14, 7)
+      ctx.fill()
+      const avance = (100 - libres) / 100
+      if (avance > 0) {
+        ctx.fillStyle = C.rayo
+        ctx.beginPath()
+        roundRect(ctx, PX, PY, Math.max(14, PW * avance), 14, 7)
+        ctx.fill()
+      }
+      texto('Los grises están disponibles', MID, y + 212, '500', 20, C.tenue, INNER)
+    },
   ]
-  const CARD_W   = 290
-  const CARD_H   = 90
-  const CARD_GAP = (ANCHO - tarjetas.length * CARD_W) / (tarjetas.length + 1)
-  const CARD_Y   = PROMO_Y + 116
 
-  tarjetas.forEach((t, i) => {
-    const cx = CARD_GAP + i * (CARD_W + CARD_GAP)
-
-    // Sombra / tarjeta
-    ctx.fillStyle = C.blanco
+  tarjetas.forEach((dibujar, i) => {
+    const y = BY + i * (CH + GAP)
+    ctx.fillStyle = C.tarjeta
     ctx.beginPath()
-    roundRect(ctx, cx, CARD_Y, CARD_W, CARD_H, 16)
+    roundRect(ctx, CX, y, CW, CH, 22)
     ctx.fill()
-
-    ctx.strokeStyle = 'rgba(0,0,0,0.07)'
-    ctx.lineWidth   = 1.5
-    ctx.beginPath()
-    roundRect(ctx, cx, CARD_Y, CARD_W, CARD_H, 16)
-    ctx.stroke()
-
-    ctx.textAlign = 'center'
-
-    ctx.font      = '28px Inter, system-ui, sans-serif'
-    ctx.fillStyle = C.zeus
-    ctx.fillText(t.emoji, cx + CARD_W / 2, CARD_Y + 33)
-
-    ctx.font      = 'bold 20px Inter, system-ui, sans-serif'
-    ctx.fillStyle = C.zeus
-    ctx.fillText(t.valor, cx + CARD_W / 2, CARD_Y + 60)
-
-    ctx.font      = '16px Inter, system-ui, sans-serif'
-    ctx.fillStyle = C.libreTexto
-    ctx.fillText(t.label, cx + CARD_W / 2, CARD_Y + 80)
+    dibujar(y)
   })
 
-  // Línea de contacto
-  const CONTACT_Y = CARD_Y + CARD_H + 28
-  ctx.textAlign = 'center'
+  // ══════════════════════════════════════════════════════════════════
+  // FRANJA DE PAGO / CONTACTO
+  // ══════════════════════════════════════════════════════════════════
+  const FY = BY + BH + 32
+  const FH = 168
+  ctx.fillStyle = C.rayo
+  ctx.beginPath()
+  roundRect(ctx, MARGEN, FY, ANCHO - MARGEN * 2, FH, 26)
+  ctx.fill()
 
-  ctx.font      = 'bold 28px Inter, system-ui, sans-serif'
-  ctx.fillStyle = C.zeus
-  ctx.fillText(
-    `💳 Se reciben los pagos a Nequi ${formatCelular(RIFA.celularResponsable)}`,
-    ANCHO / 2, CONTACT_Y,
-  )
-
-  ctx.font      = '22px Inter, system-ui, sans-serif'
-  ctx.fillStyle = C.libreTexto
-  ctx.fillText(
-    `Escríbenos al WhatsApp y recibe tu número ❤️`,
-    ANCHO / 2, CONTACT_Y + 34,
-  )
+  texto(`💳 Nequi ${formatCelular(RIFA.celularResponsable)}`, ANCHO / 2, FY + 76, '800', 52, C.zeus, ANCHO - MARGEN * 2 - 48)
+  texto('Escríbenos al WhatsApp y recibe tu número ❤️', ANCHO / 2, FY + 128, '600', 30, C.zeus, ANCHO - MARGEN * 2 - 48)
 
   // ─── Exportar ───────────────────────────────────────────────────
+  // JPEG de alta calidad: pesa una fracción del PNG con la foto y WhatsApp/Instagram
+  // lo recomprimen menos agresivamente.
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error('canvas.toBlob devolvió null'))),
-      'image/png',
+      'image/jpeg',
+      0.95,
     )
   })
 }
@@ -246,9 +278,9 @@ export async function compartirODescargar(boletas: Boleta[]): Promise<void> {
     .slice(0, 16)
     .replace('T', '-')
     .replace(':', '')
-  const nombre = `rifa-zeus-${ahora}.png`
+  const nombre = `rifa-zeus-${ahora}.jpg`
 
-  const file = new File([blob], nombre, { type: 'image/png' })
+  const file = new File([blob], nombre, { type: 'image/jpeg' })
 
   if (
     typeof navigator !== 'undefined' &&
