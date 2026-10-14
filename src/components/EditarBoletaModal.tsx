@@ -1,9 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatNumero } from '@/lib/formato'
-import { esCelularColombia } from '@/lib/validaciones'
+import { esCelularColombia, normalizarCelular } from '@/lib/validaciones'
+import ConfirmDialog from '@/components/ConfirmDialog'
+import HojaInferior, { PieHoja } from '@/components/HojaInferior'
+import CamposComprador from '@/components/CamposComprador'
 import type { Boleta } from '@/types/boleta'
 
 type Props = {
@@ -13,29 +16,59 @@ type Props = {
 }
 
 export default function EditarBoletaModal({ boleta, onClose, onSuccess }: Props) {
-  const [nombre, setNombre]   = useState(boleta.nombre ?? '')
-  const [celular, setCelular] = useState(boleta.celular ?? '')
-  const [notas, setNotas]     = useState(boleta.notas ?? '')
+  const inicial = {
+    nombre:  boleta.nombre ?? '',
+    celular: normalizarCelular(boleta.celular ?? ''),
+    notas:   boleta.notas ?? '',
+  }
+
+  const [nombre, setNombre]   = useState(inicial.nombre)
+  const [celular, setCelular] = useState(inicial.celular)   // solo dígitos
+  const [celularTocado, setCelularTocado] = useState(true)
+  const [notas, setNotas]     = useState(inicial.notas)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState<string | null>(null)
+  const [confirmarDescarte, setConfirmarDescarte] = useState(false)
+
+  const formRef    = useRef<HTMLFormElement>(null)
+  const nombreRef  = useRef<HTMLInputElement>(null)
+  const celularRef = useRef<HTMLInputElement>(null)
+
+  const huboCambios =
+    nombre.trim() !== inicial.nombre.trim() ||
+    celular !== inicial.celular ||
+    notas.trim() !== inicial.notas.trim()
+
+  function intentarCerrar() {
+    if (loading) return
+    if (huboCambios) return setConfirmarDescarte(true)
+    onClose()
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setError(null)
 
-    if (!esCelularColombia(celular)) {
-      setError('El celular debe tener 10 dígitos y empezar por 3 (ej. 317 378 0801)')
+    if (!nombre.trim()) {
+      setError('Escribe el nombre del comprador')
+      nombreRef.current?.focus()
       return
     }
+    if (!esCelularColombia(celular)) {
+      setCelularTocado(true)
+      celularRef.current?.focus()
+      return
+    }
+    if (!huboCambios) return onClose()
 
     setLoading(true)
-    setError(null)
 
     const supabase = createClient()
     const { error: dbError } = await supabase
       .from('boletas')
       .update({
         nombre:  nombre.trim(),
-        celular: celular.replace(/\D/g, ''),
+        celular,
         notas:   notas.trim() || null,
       })
       .eq('numero', boleta.numero)
@@ -49,85 +82,69 @@ export default function EditarBoletaModal({ boleta, onClose, onSuccess }: Props)
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/40 backdrop-blur-sm overlay-in"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="modal-up bg-superficie rounded-2xl w-full max-w-sm p-6 shadow-2xl">
-        <h2 className="text-lg font-bold text-zeus mb-5">
-          Editar boleta {formatNumero(boleta.numero)}
-        </h2>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-peligro text-sm rounded-xl p-3 mb-4">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-zeus mb-1" htmlFor="e-nombre">
-              Nombre <span className="text-peligro">*</span>
-            </label>
-            <input
-              id="e-nombre"
-              type="text"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              required
-              autoFocus
-              className="w-full border border-borde rounded-xl px-4 py-3 text-zeus bg-fondo focus:outline-none focus:border-rayo transition-colors"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zeus mb-1" htmlFor="e-celular">
-              Celular <span className="text-peligro">*</span>
-            </label>
-            <input
-              id="e-celular"
-              type="tel"
-              inputMode="numeric"
-              value={celular}
-              onChange={(e) => setCelular(e.target.value)}
-              required
-              className="w-full border border-borde rounded-xl px-4 py-3 text-zeus bg-fondo focus:outline-none focus:border-rayo transition-colors"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zeus mb-1" htmlFor="e-notas">
-              Notas{' '}
-              <span className="text-libre-texto font-normal">(opcional)</span>
-            </label>
-            <textarea
-              id="e-notas"
-              value={notas}
-              onChange={(e) => setNotas(e.target.value)}
-              rows={2}
-              className="w-full border border-borde rounded-xl px-4 py-3 text-zeus bg-fondo focus:outline-none focus:border-rayo transition-colors resize-none"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-2">
+    <>
+      <HojaInferior tituloId="editar-titulo" onIntentarCerrar={intentarCerrar}>
+        <form ref={formRef} onSubmit={handleSubmit} noValidate className="flex flex-col min-h-0 flex-1">
+          <div className="px-6 pt-3 pb-4 flex items-start gap-3">
+            <h2 id="editar-titulo" className="flex-1 min-w-0 text-lg font-bold text-zeus">
+              Editar boleta {formatNumero(boleta.numero)}
+            </h2>
             <button
               type="button"
-              onClick={onClose}
+              onClick={intentarCerrar}
+              aria-label="Cerrar"
+              className="w-9 h-9 -mr-2 flex items-center justify-center rounded-full text-libre-texto hover:bg-fondo text-xl"
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="px-6 overflow-y-auto overscroll-contain space-y-4 flex-1 min-h-0 pb-2">
+            <CamposComprador
+              idPrefijo="e"
+              nombre={nombre}
+              setNombre={setNombre}
+              celular={celular}
+              setCelular={setCelular}
+              celularTocado={celularTocado}
+              setCelularTocado={setCelularTocado}
+              notas={notas}
+              setNotas={setNotas}
+              nombreRef={nombreRef}
+              celularRef={celularRef}
+              onEnviar={() => formRef.current?.requestSubmit()}
+            />
+          </div>
+
+          <PieHoja error={error}>
+            <button
+              type="button"
+              onClick={intentarCerrar}
               disabled={loading}
-              className="flex-1 border border-borde rounded-xl py-3 text-zeus font-medium hover:bg-fondo active:scale-95 transition-all disabled:opacity-50 min-h-[44px]"
+              className="flex-1 border border-borde rounded-xl py-3 text-zeus font-medium hover:bg-fondo active:scale-95 transition-all disabled:opacity-50 min-h-[48px]"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-rayo text-zeus font-bold rounded-xl py-3 hover:brightness-95 active:scale-95 transition-all disabled:opacity-50 min-h-[44px]"
+              className="flex-[1.4] bg-rayo text-zeus font-bold rounded-xl py-3 hover:brightness-95 active:scale-95 transition-all disabled:opacity-50 min-h-[48px]"
             >
-              {loading ? 'Guardando...' : 'Guardar'}
+              {loading ? 'Guardando...' : 'Guardar cambios'}
             </button>
-          </div>
+          </PieHoja>
         </form>
-      </div>
-    </div>
+      </HojaInferior>
+
+      {confirmarDescarte && (
+        <ConfirmDialog
+          mensaje="¿Descartar los cambios? Se perderá lo que modificaste."
+          labelConfirmar="Descartar"
+          variante="peligro"
+          onCancelar={() => setConfirmarDescarte(false)}
+          onConfirmar={onClose}
+        />
+      )}
+    </>
   )
 }
