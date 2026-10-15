@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatNumero } from '@/lib/formato'
-import { esCelularColombia, normalizarCelular } from '@/lib/validaciones'
+import { esCelularValido } from '@/lib/validaciones'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import HojaInferior, { PieHoja } from '@/components/HojaInferior'
 import CamposComprador from '@/components/CamposComprador'
@@ -18,7 +18,7 @@ type Props = {
 export default function EditarBoletaModal({ boleta, onClose, onSuccess }: Props) {
   const inicial = {
     nombre:  boleta.nombre ?? '',
-    celular: normalizarCelular(boleta.celular ?? ''),
+    celular: (boleta.celular ?? '').replace(/\D/g, ''),
     notas:   boleta.notas ?? '',
   }
 
@@ -54,7 +54,7 @@ export default function EditarBoletaModal({ boleta, onClose, onSuccess }: Props)
       nombreRef.current?.focus()
       return
     }
-    if (!esCelularColombia(celular)) {
+    if (!esCelularValido(celular)) {
       setCelularTocado(true)
       celularRef.current?.focus()
       return

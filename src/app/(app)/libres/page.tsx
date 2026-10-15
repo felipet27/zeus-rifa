@@ -6,6 +6,7 @@ import { formatNumero, formatCOP, listaNumeros } from '@/lib/formato'
 import { RIFA } from '@/config/rifa'
 import ComprometerModal from '@/components/ComprometerModal'
 import Toast from '@/components/Toast'
+import CampoBusqueda from '@/components/CampoBusqueda'
 
 export default function LibresPage() {
   const { boletas, loading, error } = useBoletas()
@@ -19,6 +20,11 @@ export default function LibresPage() {
   const filtradas = busqueda
     ? libres.filter((b) => formatNumero(b.numero).includes(busqueda))
     : libres
+
+  // Si buscan un número exacto que ya se vendió, se dice de quién es
+  const tomada = busqueda.length === 2
+    ? boletas.find((b) => b.numero === Number(busqueda) && b.estado === 'comprometida')
+    : undefined
 
   // Si otra persona compromete una boleta marcada, deja de contar en la selección
   const seleccion = marcadas.filter((n) => libres.some((b) => b.numero === n))
@@ -84,13 +90,11 @@ export default function LibresPage() {
         )}
       </div>
 
-      <input
-        type="text"
-        inputMode="numeric"
-        placeholder="Buscar número (ej. 07)..."
+      <CampoBusqueda
         value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value.replace(/\D/g, '').slice(0, 2))}
-        className="w-full border border-borde rounded-xl px-4 py-3 mb-4 bg-superficie focus:outline-none focus:border-rayo text-zeus transition-colors"
+        onChange={(v) => setBusqueda(v.replace(/\D/g, '').slice(0, 2))}
+        placeholder="Buscar número (ej. 07)..."
+        inputMode="numeric"
       />
 
       {filtradas.length === 0 ? (
@@ -108,7 +112,9 @@ export default function LibresPage() {
               <span className="text-5xl block mb-3">🔍</span>
               <p className="font-semibold text-zeus">Sin resultados</p>
               <p className="text-libre-texto text-sm mt-1">
-                No hay boletas libres con ese número
+                {tomada
+                  ? `La ${formatNumero(tomada.numero)} ya es de ${tomada.nombre}`
+                  : 'No hay boletas libres con ese número'}
               </p>
               <button
                 onClick={() => setBusqueda('')}

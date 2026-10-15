@@ -12,9 +12,10 @@ export function normalizar(texto: string): string {
 }
 
 export function detectarTipo(query: string): 'numero' | 'celular' | 'texto' {
-  const soloDigitos = /^\d+$/.test(query.trim())
-  if (soloDigitos) {
-    return query.trim().length <= 2 ? 'numero' : 'celular'
+  // Un celular puede venir escrito "317 378 0801", "+57 317…" o "+1 (305) 555-0123"
+  const sinFormato = query.trim().replace(/[\s+\-().]/g, '')
+  if (/^\d+$/.test(sinFormato)) {
+    return sinFormato.length <= 2 ? 'numero' : 'celular'
   }
   return 'texto'
 }
@@ -35,7 +36,9 @@ export function filtrarBoletas(
       const num = parseInt(q, 10)
       resultado = resultado.filter((b) => b.numero === num)
     } else if (tipo === 'celular') {
-      const digits = q.replace(/\D/g, '')
+      let digits = q.replace(/\D/g, '')
+      // Los celulares colombianos se guardan sin el indicativo 57
+      if (digits.length > 10 && digits.startsWith('57')) digits = digits.slice(2)
       resultado = resultado.filter((b) => b.celular?.includes(digits))
     } else {
       const qNorm = normalizar(q)

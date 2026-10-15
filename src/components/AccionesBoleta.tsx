@@ -7,6 +7,7 @@ import { RIFA } from '@/config/rifa'
 import ComprometerModal from './ComprometerModal'
 import EditarBoletaModal from './EditarBoletaModal'
 import ConfirmDialog from './ConfirmDialog'
+import { celularWhatsApp } from '@/lib/validaciones'
 import type { Boleta } from '@/types/boleta'
 
 type Props = {
@@ -15,11 +16,10 @@ type Props = {
 }
 
 function urlWhatsApp(boleta: Boleta): string {
-  const cel = (boleta.celular ?? '').replace(/\D/g, '')
   const msg = encodeURIComponent(
     `Hola ${boleta.nombre ?? ''} 😊, te quería recordar que tu boleta N.° ${formatNumero(boleta.numero)} de la rifa por Zeus juega el *Viernes 30 de Octubre* con la Lotería de Medellín 🎰. ¡Gracias por apoyar! ❤️🐾`
   )
-  return `https://wa.me/57${cel}?text=${msg}`
+  return `https://wa.me/${celularWhatsApp(boleta.celular ?? '')}?text=${msg}`
 }
 
 export default function AccionesBoleta({ boleta, onMensaje }: Props) {

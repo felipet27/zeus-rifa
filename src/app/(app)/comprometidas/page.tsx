@@ -4,7 +4,9 @@ import { useState } from 'react'
 import { useBoletas } from '@/hooks/useBoletas'
 import { formatNumero, formatCelular, formatCOP } from '@/lib/formato'
 import { RIFA } from '@/config/rifa'
+import { filtrarBoletas } from '@/lib/busqueda'
 import AccionesBoleta from '@/components/AccionesBoleta'
+import CampoBusqueda from '@/components/CampoBusqueda'
 import Toast from '@/components/Toast'
 
 type Filtro = 'todas' | 'pagadas' | 'debe'
@@ -48,21 +50,13 @@ export default function ComprometidasPage() {
   const debe          = comprometidas.filter((b) => !b.pagada)
   const progreso      = (comprometidas.length / RIFA.totalBoletas) * 100
 
-  const filtradas = comprometidas
-    .filter((b) => {
-      if (filtro === 'pagadas') return b.pagada
-      if (filtro === 'debe')    return !b.pagada
-      return true
-    })
-    .filter((b) => {
-      if (!busqueda) return true
-      const q = busqueda.toLowerCase()
-      return (
-        formatNumero(b.numero).includes(q) ||
-        (b.nombre?.toLowerCase().includes(q) ?? false) ||
-        (b.celular?.includes(busqueda.replace(/\D/g, '')) ?? false)
-      )
-    })
+  // Misma búsqueda del módulo Buscar: número exacto, celular o nombre/notas sin importar tildes
+  const filtradas = filtrarBoletas(
+    comprometidas,
+    busqueda,
+    filtro === 'todas' ? 'comprometidas' : filtro,
+    'numero',
+  )
 
   return (
     <div className="p-4">
@@ -147,12 +141,10 @@ export default function ComprometidasPage() {
         })}
       </div>
 
-      <input
-        type="text"
-        placeholder="Buscar por número, nombre o celular..."
+      <CampoBusqueda
         value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
-        className="w-full border border-borde rounded-xl px-4 py-3 mb-3 bg-superficie focus:outline-none focus:border-rayo text-zeus transition-colors"
+        onChange={setBusqueda}
+        placeholder="Número, nombre o celular..."
       />
 
       {/* ── Lista ───────────────────────────────────────────────── */}

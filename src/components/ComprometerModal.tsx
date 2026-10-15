@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatNumero, formatCOP, formatCelular, listaNumeros } from '@/lib/formato'
-import { esCelularColombia } from '@/lib/validaciones'
+import { esCelularValido, celularWhatsApp } from '@/lib/validaciones'
 import { RIFA } from '@/config/rifa'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import HojaInferior, { PieHoja } from '@/components/HojaInferior'
@@ -39,7 +39,7 @@ export default function ComprometerModal({ numeros, onClose, onSuccess }: Props)
   const celularRef = useRef<HTMLInputElement>(null)
 
   const varias        = numeros.length > 1
-  const celularValido = esCelularColombia(celular)
+  const celularValido = esCelularValido(celular)
   const conDatos = Boolean(nombre.trim() || celular || notas.trim() || pagada)
 
   function intentarCerrar() {
@@ -137,7 +137,7 @@ export default function ComprometerModal({ numeros, onClose, onSuccess }: Props)
   }
 
   function enviarWhatsApp(guardadas: number[]) {
-    const url = `https://wa.me/57${celular}?text=${encodeURIComponent(mensajeWhatsApp(guardadas))}`
+    const url = `https://wa.me/${celularWhatsApp(celular)}?text=${encodeURIComponent(mensajeWhatsApp(guardadas))}`
     window.open(url, '_blank', 'noopener')
   }
 

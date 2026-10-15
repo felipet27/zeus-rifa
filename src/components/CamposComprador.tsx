@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { formatCelularParcial } from '@/lib/formato'
-import { esCelularColombia, normalizarCelular } from '@/lib/validaciones'
+import {
+  PAISES, celularGuardado, esLocalValido, interpretarCelular, paisDeCelular, type Pais,
+} from '@/lib/validaciones'
 
 // Contact Picker API: solo existe en Chrome Android (no en Safari/iOS)
 type ContactoElegido = { name?: string[]; tel?: string[] }
@@ -13,11 +15,12 @@ type SelectorContactos = {
 export const inputBase =
   'w-full border-2 rounded-xl px-4 py-3 text-base text-zeus bg-fondo focus:outline-none transition-colors'
 
-export function mensajeErrorCelular(celular: string, tocado: boolean): string | null {
-  if (celular.length > 0 && !celular.startsWith('3')) return 'El celular debe empezar por 3'
-  if (!tocado || esCelularColombia(celular)) return null
-  if (celular.length === 0) return 'Escribe el celular'
-  const faltan = 10 - celular.length
+export function mensajeErrorCelular(pais: Pais, local: string, tocado: boolean): string | null {
+  if (pais === 'CO' && local.length > 0 && !local.startsWith('3')) return 'El celular debe empezar por 3'
+  if (pais === 'US' && /^[01]/.test(local)) return 'El código de área no puede empezar por 0 ni 1'
+  if (!tocado || esLocalValido(pais, local)) return null
+  if (local.length === 0) return 'Escribe el celular'
+  const faltan = 10 - local.length
   return `Faltan ${faltan} ${faltan === 1 ? 'dígito' : 'dígitos'}`
 }
 
@@ -31,7 +34,7 @@ type Props = {
   idPrefijo: string
   nombre: string
   setNombre: (v: string) => void
-  celular: string                 // solo dígitos
+  celular: string                 // como se guarda: CO 10 dígitos, EE. UU. "1" + 10 dígitos
   setCelular: (v: string) => void
   celularTocado: boolean
   setCelularTocado: (v: boolean) => void
@@ -56,9 +59,25 @@ export default function CamposComprador({
   const notasRef = useRef<HTMLInputElement>(null)
   const [hayContactos, setHayContactos] = useState(false)
   const [puedePegar, setPuedePegar]     = useState(false)
+  const [pais, setPais] = useState<Pais>(() => paisDeCelular(celular))
 
-  const celularValido = esCelularColombia(celular)
-  const errorCelular  = mensajeErrorCelular(celular, celularTocado)
+  // En EE. UU. el valor guardado lleva el 1 adelante; el campo solo muestra los 10 dígitos locales
+  const local         = pais === 'US' && celular.startsWith('1') ? celular.slice(1) : celular
+  const celularValido = esLocalValido(pais, local)
+  const errorCelular  = mensajeErrorCelular(pais, local, celularTocado)
+
+  function aplicarCelular(valor: string, paisBase: Pais = pais) {
+    const r = interpretarCelular(valor, paisBase)
+    setPais(r.pais)
+    setCelular(celularGuardado(r.pais, r.local))
+    return r
+  }
+
+  function cambiarPais(nuevo: Pais) {
+    setPais(nuevo)
+    setCelular(celularGuardado(nuevo, local))
+    celularRef.current?.focus()
+  }
 
   useEffect(() => {
     setHayContactos('contacts' in navigator && 'ContactsManager' in window)
@@ -82,11 +101,12 @@ export default function CamposComprador({
       if (!contacto) return
       const nombreContacto = contacto.name?.[0]?.trim()
       if (nombreContacto) setNombre(nombreContacto)
-      // Se prefiere el primer número que sea celular colombiano válido
-      const tels = (contacto.tel ?? []).map(normalizarCelular)
-      const tel  = tels.find(esCelularColombia) ?? tels[0]
+      // Se prefiere el primer número que sea un celular válido (Colombia o EE. UU.)
+      const tels = (contacto.tel ?? []).map((t) => interpretarCelular(t, pais))
+      const tel  = tels.find((t) => esLocalValido(t.pais, t.local)) ?? tels[0]
       if (tel) {
-        setCelular(tel)
+        setPais(tel.pais)
+        setCelular(celularGuardado(tel.pais, tel.local))
         setCelularTocado(true)
       }
       notasRef.current?.focus()
@@ -98,9 +118,9 @@ export default function CamposComprador({
   // Plan B donde no hay agenda (iPhone): pegar el número copiado de WhatsApp o Contactos
   async function pegarCelular() {
     try {
-      const tel = normalizarCelular(await navigator.clipboard.readText())
-      if (!tel) return
-      setCelular(tel)
+      const texto = await navigator.clipboard.readText()
+      if (!texto.replace(/\D/g, '')) return
+      aplicarCelular(texto)
       setCelularTocado(true)
       celularRef.current?.focus()
     } catch {
@@ -141,14 +161,28 @@ export default function CamposComprador({
         <label className="block text-sm font-medium text-zeus mb-1" htmlFor={`${idPrefijo}-celular`}>
           Celular <span className="text-peligro">*</span>
         </label>
-        <div className="relative">
+        <div className="flex gap-2">
+        <div className="relative shrink-0">
+          <select
+            value={pais}
+            onChange={(e) => cambiarPais(e.target.value as Pais)}
+            aria-label="Indicativo del país"
+            className="appearance-none h-full border-2 border-borde rounded-xl pl-3 pr-7 text-base text-zeus bg-fondo focus:outline-none focus:border-rayo tabular-nums"
+          >
+            {(Object.keys(PAISES) as Pais[]).map((p) => (
+              <option key={p} value={p}>{PAISES[p].bandera} +{PAISES[p].indicativo}</option>
+            ))}
+          </select>
+          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-libre-texto pointer-events-none">▾</span>
+        </div>
+        <div className="relative flex-1 min-w-0">
           <input
             ref={celularRef}
             id={`${idPrefijo}-celular`}
             type="tel"
             inputMode="numeric"
-            value={formatCelularParcial(celular)}
-            onChange={(e) => setCelular(normalizarCelular(e.target.value))}
+            value={formatCelularParcial(local)}
+            onChange={(e) => aplicarCelular(e.target.value)}
             onBlur={() => celular && setCelularTocado(true)}
             onKeyDown={pasarA(notasRef)}
             onFocus={alEnfocar}
@@ -163,7 +197,7 @@ export default function CamposComprador({
                   ? 'border-pagada focus:border-pagada'
                   : 'border-borde focus:border-rayo'
             }`}
-            placeholder="317 378 0801"
+            placeholder={PAISES[pais].ejemplo}
           />
           {celularValido && (
             <span className={`absolute ${botonCelular ? 'right-14' : 'right-3'} top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-pagada text-white text-sm flex items-center justify-center pointer-events-none`}>
@@ -181,6 +215,7 @@ export default function CamposComprador({
               {botonCelular.icono}
             </button>
           )}
+        </div>
         </div>
         {botonCelular && !errorCelular && !celular && (
           <p className="text-xs text-libre-texto mt-1">
